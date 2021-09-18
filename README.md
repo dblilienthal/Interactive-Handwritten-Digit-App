@@ -5,6 +5,8 @@ In this project, you can draw a digit with your mouse and Keras will tell you wh
 
 ## Instructions
 
-1. Download the main.py and my_model.h5  
-2. Run main.py  
-3. When the tkinker canvas opens, write the number (0-9) in the canvas, save the canvas (button on bottom), close the canvas, and look at the terminal for your number. 
+1. Clone the repository 
+2. Create a new virutal enviorment with the requirements-core.txt file (optional)
+3. Run model.py to create the deep learning model
+4. Run Run.sh to run the main program  
+5. Follow the instructions when they appear to get your predictions :)
