@@ -2,13 +2,11 @@ import PIL
 from PIL import ImageDraw
 from tkinter import *
 import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
+from pathlib import Path
+import os
+import model
 
-# Allocate GPU for predictions
-physical_devices = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # Parameters for Canvas
 width = 500
@@ -16,11 +14,12 @@ height = 500
 center = height//2
 white = (255, 255, 255)
 black = (0, 0, 0)
+cwd = Path(__file__).resolve().parent ### Current Directory
 
 
 def save():
     """This method just saves the file to the local directory"""
-    filename = 'temp.png'
+    filename = str(cwd)+'/temp.png'
     image1.save(filename)
 
 
@@ -33,38 +32,10 @@ def paint(event):
     draw.line([x1, y1, x2, y2], fill=color, width=30)
 
 
-def create_model():
-    """Run this method to create, train, and save the Keras model"""
-    objects = tf.keras.datasets.mnist
-    # Split the data set into training and testing data
-    (training_images, training_labels), (testing_images, testing_labels) = objects.load_data()
-
-    # Scale the data
-    training_images = training_images / 225.0
-    testing_images = testing_images / 225.0
-
-    # Create our model
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(28, 28)),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(10, activation='softmax')
-    ])
-
-    # Get our model ready for training
-    model.compile(optimizer=Adam(learning_rate=0.0001),
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
-
-    # Train the model
-    model.fit(training_images, training_labels, epochs=3)
-    # Save the model
-    model.save('my_model.h5')
-
-
 def get_number_from_picture():
     """Get the image ready for inference"""
     from PIL import Image
-    im = Image.open("temp.png")
+    im = Image.open(str(cwd)+"/temp.png")
     newsize = (28, 28)
     im = im.resize(newsize)
 
@@ -76,30 +47,46 @@ def get_number_from_picture():
     pic_array = pic_array.reshape((1, 28, 28))
 
     """Load the Model and weights"""
-    loaded_model = load_model('my_model.h5')
+    saved_model = model.create_model() # load the model from the model's file
+    weights_dir = str(cwd)+'/model_weights'
+    weights = os.listdir(str(cwd)+'/model_weights') # Weights directory
+    saved_model.load_weights(weights_dir+'/'+str(sorted(weights)[-1]))
 
-    prediction = loaded_model.predict(x=pic_array)
-    print("The predicted value is:", np.argmax(prediction))
+    prediction = saved_model.predict(x=pic_array)
+    print("\n\n\nThe predicted value is: "+str(np.argmax(prediction))+"\n\n\n")
 
-    del loaded_model
+    del saved_model
 
 
-"""Code for canvas drawing"""
+if __name__ == '__main__':
 
-root = Tk()
-cv = Canvas(root, width=width, height=height, bg='white')
-cv.pack()
+    print("""
+    ####################################
 
-image1 = PIL.Image.new("RGB", (width, height), black)
-draw = ImageDraw.Draw(image1)
+    Step 1: Draw your single digit
 
-cv.pack(expand=YES, fill=BOTH)
-cv.bind('<B1-Motion>', paint)
+    Step 2: Save the digit at the bottom
 
-button = Button(text="Save", command=save)
-button.pack()
+    Step 3: Close out the window
 
-root.mainloop() # Run the canvas
+    ####################################
+    """)
 
-# Get the predictions
-get_number_from_picture()
+    """Code for canvas drawing"""
+    root = Tk()
+    cv = Canvas(root, width=width, height=height, bg='white')
+    cv.pack()
+
+    image1 = PIL.Image.new("RGB", (width, height), black)
+    draw = ImageDraw.Draw(image1)
+
+    cv.pack(expand=YES, fill=BOTH)
+    cv.bind('<B1-Motion>', paint)
+
+    button = Button(text="Save", command=save)
+    button.pack()
+
+    root.mainloop() # Run the canvas
+
+    # Get the predictions
+    get_number_from_picture()
